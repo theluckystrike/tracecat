@@ -83,6 +83,37 @@ def test_httpx_to_response_text(mock_text_response: httpx.Response) -> None:
     assert "content-type" in result["headers"]
 
 
+@pytest.mark.parametrize(
+    "content_type",
+    [
+        "application/vnd.api+json",
+        "application/vnd.api+json; charset=utf-8",
+        "application/problem+json",
+        "APPLICATION/VND.API+JSON",
+    ],
+)
+def test_httpx_to_response_json_suffix_media_types(content_type: str) -> None:
+    """Media types with a +json suffix are parsed as JSON."""
+    response = httpx.Response(
+        status_code=200,
+        headers={"Content-Type": content_type},
+        json={"data": {"page_index": 1, "total_pages": 2}},
+    )
+    result = httpx_to_response(response)
+    assert result["data"] == {"data": {"page_index": 1, "total_pages": 2}}
+
+
+def test_httpx_to_response_json_suffix_invalid_body_returns_text() -> None:
+    """A +json response with a body that is not JSON stays readable as text."""
+    response = httpx.Response(
+        status_code=200,
+        headers={"Content-Type": "application/vnd.api+json"},
+        text="not json",
+    )
+    result = httpx_to_response(response)
+    assert result["data"] == "not json"
+
+
 def test_httpx_to_response_no_content(mock_no_content_response: httpx.Response) -> None:
     """Test converting 204 response to HTTPResponse."""
     result = httpx_to_response(mock_no_content_response)

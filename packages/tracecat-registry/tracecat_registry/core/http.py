@@ -282,12 +282,25 @@ def httpx_to_response(
             headers=dict(response.headers.items()),
             data=response.json(),
         )
+    elif _has_json_suffix(content_type):
+        return HTTPResponse(
+            status_code=response.status_code,
+            headers=dict(response.headers.items()),
+            data=_try_parse_response_data(response),
+        )
     else:
         return HTTPResponse(
             status_code=response.status_code,
             headers=dict(response.headers.items()),
             data=response.text,
         )
+
+
+def _has_json_suffix(content_type: str | None) -> bool:
+    """Return whether a media type uses the `+json` structured syntax suffix."""
+    if not content_type:
+        return False
+    return content_type.split(";", 1)[0].strip().lower().endswith("+json")
 
 
 def _try_parse_response_data(response: httpx.Response) -> str | dict[str, Any]:
